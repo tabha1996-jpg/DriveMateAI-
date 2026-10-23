@@ -3,6 +3,15 @@
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <queries>
         <intent><action android:name="android.speech.action.RECOGNIZE_SPEECH" /></intent>
+        <package android:name="com.google.android.apps.maps" />
+        <package android:name="com.android.vending" />
+        <package android:name="com.hpcl.ev" />
+        <package android:name="com.iocl.ev" />
+        <package android:name="com.edrive.bpcl" />
+        <package android:name="com.tatapower.evapp" />
+        <package android:name="com.jiobp.pulse_charge" />
+        <package android:name="com.namp.jiobppulse" />
+        <package android:name="com.tatamotors.evoneapp" />
     </queries>
     <application
         android:allowBackup="false"
@@ -10,6 +19,14 @@
         android:label="DriveMate AI"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
         <activity android:name=".MainActivity" android:exported="false" />
+        <activity android:name=".ProviderAccessActivity" android:exported="false" />
+        <activity android:name=".SharedStationActivity" android:exported="true" android:label="Share with DriveMate">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
         <activity android:name=".DrivingActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
