@@ -83,6 +83,20 @@ class ProviderAccessActivity : FragmentActivity() {
         })
         setContentView(ScrollView(this).apply { addView(root) })
         renderProviders()
+        val requested = intent.getStringExtra("provider")
+        if (!requested.isNullOrBlank()) {
+            val candidate = providers.firstOrNull { p ->
+                p.label.contains(requested, ignoreCase = true) ||
+                    (requested.equals("HP", true) && p.label.startsWith("HP")) ||
+                    (requested.equals("Jio", true) && p.label.startsWith("Jio")) ||
+                    (requested.equals("Tata", true) && p.label.startsWith("Tata Power"))
+            }
+            if (candidate != null) {
+                val installed = installedPackage(candidate)
+                if (installed != null) requestLaunchConsent(candidate, installed)
+                else confirmInstall(candidate)
+            }
+        }
     }
 
     override fun onResume() {
