@@ -10,14 +10,14 @@ import android.speech.RecognizerIntent
 import android.speech.tts.TextToSpeech
 import android.net.Uri
 import android.widget.*
-import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import java.util.Locale
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
     private lateinit var output: TextView
     private lateinit var input: EditText
     private var tts: TextToSpeech? = null
