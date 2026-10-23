@@ -46,7 +46,7 @@ class OfflineAiEngine(private val context: Context) : AutoCloseable {
 
     fun reply(message: String): String {
         val chat = checkNotNull(conversation) { "Import a compatible .litertlm model first." }
-        return chat.sendMessage(message).text
+        return chat.sendMessage(message).toString()
     }
 
     override fun close() {
