@@ -1,15 +1,31 @@
-# DriveMate AI — private Android starter v0.1
+# DriveMate AI — Android driving companion (prototype V1)
 
-This is a **starter**, not the complete AI travel agent. Includes a minimal UI, device authentication prompt, voice-to-text via Android's speech service, local keyword detection, text-to-speech, and Google Maps search handoff. Does **not** include OpenAI, live Places search, route sync, charging availability, encrypted chat database, or autonomous app control. Android speech service may process audio externally depending on device configuration.
+This repository contains a **guided prototype**, not an integrated autonomous driving agent.
 
-## Build online (no Android Studio)
-1. Create a **private** GitHub repository named `DriveMateAI`.
-2. Upload the **contents** of this folder to the repository root, preserving `.github/workflows/build-apk.yml`.
-3. Open repository → Actions → Build private APK → Run workflow (or push to main).
-4. Download artifact `DriveMateAI-debug-apk` from the successful run; extract `app-debug.apk`.
-5. On your Android phone, open the APK and approve installation from that source. Turn off that installation permission afterward.
+## V1 driving mode
 
-The GitHub Actions runner uses a temporary debug signing key. APKs from separate builds may not upgrade in place; preserve a stable signing key before storing important app data. Never upload secrets/API keys into source control. No permissions for payments or accessibility are requested.
+The launcher opens DrivingActivity. After Android biometric/device authentication, it supports:
+- Hinglish voice input through the installed Android speech-recognition service (may use cloud recognition).
+- Manual battery state-of-charge %, a destination and requested search radius, stored locally.
+- Simple extraction of a percentage or km radius from a spoken command.
+- Google Maps driving directions, DC/CCS2 charger search, and restaurant search.
+- A separate button to open the experimental offline-AI screen from the existing v0.2 code.
+- Text-to-speech replies and explicit *unverified* warnings instead of fake live availability.
 
-## Privacy / security notes
-This version has no account, analytics SDK, server, payment integration, or local conversation database. It blocks normal screenshots. The biometric prompt is **not yet a complete security gate**: the UI is constructed before authentication; production version must gate all actions behind authentication and re-authenticate on resume. Device speech recognition can use a cloud speech provider. Google Maps handoff shares the query with Maps. No external AI model is connected.
+**Critical limitations:** Search in Google Maps is not constrained to the road ahead, the same carriageway, the entered 20-km radius or restaurant-review thresholds. It does not verify charger gun occupancy, functioning status, last session, price, review count, highway detour, or restaurant opening hours. Never treat a Maps result as a confirmed available charger. The manual SOC is not read from Tata iRA.ev. Do not operate this app while driving; have a passenger use it or pull over.
+
+For a production agent, add a real routing provider that calculates legal driving access and detour, EV provider(s) that supply connector-level freshness/status, a Places provider for restaurants with ratings and counts, and explicit unknown/unverified states. Do not claim such integrations are included yet.
+
+No payment/banking permissions or AccessibilityService. Do not commit API keys or tokens. The app is not a payment client.
+
+## Build via GitHub Actions
+
+1. Open **Actions → Build DriveMate AI APK → Run workflow** and select the V1 branch, or look at the PR build.
+2. Once the workflow **succeeds**, download the artifact `DriveMateAI-debug-apk` and extract `app-debug.apk`.
+3. Install on an Android phone. Debug signing keys can differ between workflow runs; uninstalling an older debug build may be necessary and clears its app data.
+
+The current offline AI feature depends on the experimental LiteRT-LM dependency in `app/build.gradle.kts`, and requires a separately imported compatible `.litertlm` model. The driving mode does **not** depend on importing that model.
+
+## Privacy
+
+Trip fields are stored locally in app private preferences. Voice recognition uses the Android speech-recognition provider installed on the device, whose own privacy policy applies. Search and navigation handoffs share the query with Google Maps. Screenshots are restricted. The app does not read messages, payments or private data from other apps. Biometric/device lock gates both app modes.
