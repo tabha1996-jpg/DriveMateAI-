@@ -82,6 +82,13 @@ class DrivingActivity : FragmentActivity() {
         button(column, "Ask DriveMate") { ask() }
         button(column, "Open route to destination") { navigate() }
         button(column, "Search DC chargers in Maps") { findChargers() }
+        button(column, "All charging networks • connection status") {
+            val registry = ChargingProviderRegistry()
+            reply("Ek jagah sab providers ka status:\n" + registry.connectionSummary() +
+                "\n\nAbhi koi provider-level gun feed connected nahi hai. " +
+                "Generic Google Maps charger search sab networks ke results la sakta hai, " +
+                "lekin har connector ka live status automatically confirm nahi karta.")
+        }
         button(column, "Search restaurants in Maps") { findRestaurants() }
         button(column, "Offline AI (experimental)") {
             startActivity(Intent(this, MainActivity::class.java))
