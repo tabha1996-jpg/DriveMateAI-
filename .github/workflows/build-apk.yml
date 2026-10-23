@@ -3,6 +3,9 @@ name: Build private APK
 
 'on':
   workflow_dispatch:
+  push:
+    branches:
+      - feature/drive-safe-v03
 
 permissions:
   contents: read
