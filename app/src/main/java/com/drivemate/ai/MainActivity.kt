@@ -66,7 +66,7 @@ class MainActivity : FragmentActivity() {
         }
         layout.addView(importModel)
         speak = Button(this).apply {
-            text = "🎙 Speak"
+            text = "🎙 Speak with AI Agent"
             setOnClickListener {
                 if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) listen()
                 else micPermission.launch(Manifest.permission.RECORD_AUDIO)
@@ -76,12 +76,18 @@ class MainActivity : FragmentActivity() {
         ask = Button(this).apply { text = "Ask offline AI"; setOnClickListener { process() } }
         layout.addView(ask)
         maps = Button(this).apply {
-            text = "Open Google Maps"
+            text = "Return to Google Maps (keep route)"
             setOnClickListener {
                 if (!unlocked) return@setOnClickListener
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=" + Uri.encode(input.text.toString().ifBlank { "restaurants" })))
-                intent.setPackage("com.google.android.apps.maps")
-                try { startActivity(intent) } catch (_: Exception) { output.text = "Google Maps not available." }
+                // Launch Maps without sending a destination or replacing an active route.
+                val intent = packageManager.getLaunchIntentForPackage("com.google.android.apps.maps")
+                if (intent == null) {
+                    output.text = "Google Maps not installed."
+                } else {
+                    try { startActivity(intent) } catch (_: Exception) {
+                        output.text = "Unable to open Google Maps."
+                    }
+                }
             }
         }
         layout.addView(maps)
