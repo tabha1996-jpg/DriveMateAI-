@@ -67,7 +67,7 @@ class DrivingActivity : FragmentActivity() {
         }
         column.addView(TextView(this).apply { text = "DriveMate • Driving"; textSize = 27f })
         column.addView(TextView(this).apply {
-            text = "V1 guided prototype • No live connector or restaurant verification"
+            text = "V2 • provider app consent + Maps / voice • no live gun feed"
             textSize = 14f
         })
         destination = field(column, "Destination (e.g. Kolkata)", prefs.getString("destination", "").orEmpty())
@@ -82,6 +82,9 @@ class DrivingActivity : FragmentActivity() {
         button(column, "Ask DriveMate") { ask() }
         button(column, "Open route to destination") { navigate() }
         button(column, "Search DC chargers in Maps") { findChargers() }
+        button(column, "EV Apps • Request launch access (V2)") {
+            startActivity(Intent(this, ProviderAccessActivity::class.java))
+        }
         button(column, "All charging networks • connection status") {
             val registry = ChargingProviderRegistry()
             reply("Ek jagah sab providers ka status:\n" + registry.connectionSummary() +
@@ -190,6 +193,23 @@ class DrivingActivity : FragmentActivity() {
             .find(text)?.groupValues?.get(1)?.toIntOrNull()?.takeIf { it in 1..200 }
             ?.let { rangeKm.setText(it.toString()) }
         saveTrip()
+        val providerRequest = listOf("app", "application", "kholo", "open", "access", "permission", "connect")
+            .any { text.contains(it, true) }
+        val provider = when {
+            text.contains("jio", true) || text.contains("pulse", true) -> "Jio"
+            text.contains("indian oil", true) || text.contains("indianoil", true) || text.contains("iocl", true) -> "IndianOil"
+            text.contains("bpcl", true) || text.contains("bharat petroleum", true) -> "BPCL"
+            text.contains("hpcl", true) || text.contains("hp echarge", true) -> "HP"
+            text.contains("tata motors", true) || text.contains("ira", true) -> "iRA"
+            text.contains("tata power", true) || text.contains("ez charge", true) -> "Tata Power"
+            else -> null
+        }
+        if (providerRequest && provider != null) {
+            reply("${provider} app open karne ke liye pehle permission puchunga. " +
+                "Ye app launch permission hai, private charger gun data ka access nahi.")
+            startActivity(Intent(this, ProviderAccessActivity::class.java).putExtra("provider", provider))
+            return
+        }
         val charger = listOf("charg", "dc", "चार्ज").any { text.contains(it, true) }
         val food = listOf("restaurant", "food", "khana", "khaana", "hotel", "खाना", "भूख")
             .any { text.contains(it, true) }
@@ -201,7 +221,7 @@ class DrivingActivity : FragmentActivity() {
             route -> navigate()
             text.contains("battery", true) || text.contains("percent", true) ->
                 reply("Tumhari entered battery ${batteryText()} hai. Tata iRA.ev live feed connected nahi hai, isliye actual battery main independently confirm nahi kar sakta.")
-            else -> reply("V1 mein navigation, DC charger search aur restaurant search available hain. Live multi-app decision agent abhi connected nahi hai.")
+            else -> reply("V2 mein navigation, Maps search aur approved provider app launching available hai. Live connector feeds abhi connected nahi hain.")
         }
     }
 
