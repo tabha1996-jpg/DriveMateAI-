@@ -1,6 +1,6 @@
 name: Build private APK
 
-on:
+'on':
   workflow_dispatch:
 
 jobs:
