@@ -14,7 +14,27 @@ class OfflineAiEngine(private val context: Context) : AutoCloseable {
     private var engine: Engine? = null
     private var conversation: Conversation? = null
 
+
+    /** Report whether Android can load the JNI runtime; this does not test a model. */
+    fun verifyNativeLibrary(): String {
+        val nativeDir = context.applicationInfo.nativeLibraryDir ?: "(unavailable)"
+        val library = File(nativeDir, "liblitertlm_jni.so")
+        val details = "Android API ${android.os.Build.VERSION.SDK_INT}, ABI ${android.os.Build.SUPPORTED_ABIS.firstOrNull() ?: "unknown"}"
+        return try {
+            System.loadLibrary("litertlm_jni")
+            "Native AI library: OK\n${details}\nFile extracted: ${library.isFile}\nNext: import a compatible .litertlm model."
+        } catch (error: UnsatisfiedLinkError) {
+            android.util.Log.e("DriveMateAI", "Native library failed to load", error)
+            "Native AI library: FAILED\n${details}\nFile extracted: ${library.isFile}\nCause: ${error.message ?: "unknown error"}"
+        } catch (error: Throwable) {
+            android.util.Log.e("DriveMateAI", "Native library diagnostic error", error)
+            "Native AI check failed: ${error.javaClass.simpleName}: ${error.message ?: "unknown error"}"
+        }
+    }
+
     fun load(modelFile: File) {
+        // Preload JNI to surface any missing native component explicitly.
+        System.loadLibrary("litertlm_jni")
         require(modelFile.isFile && modelFile.length() > 0L) { "Model file missing or empty" }
         close()
         val candidate = Engine(
@@ -46,7 +66,7 @@ class OfflineAiEngine(private val context: Context) : AutoCloseable {
 
     fun reply(message: String): String {
         val chat = checkNotNull(conversation) { "Import a compatible .litertlm model first." }
-        return chat.sendMessage(message).text
+        return chat.sendMessage(message).toString()
     }
 
     override fun close() {

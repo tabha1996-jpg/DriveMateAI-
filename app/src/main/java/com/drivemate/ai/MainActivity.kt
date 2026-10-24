@@ -25,6 +25,8 @@ class MainActivity : FragmentActivity() {
     private lateinit var speak: Button
     private lateinit var maps: Button
     private lateinit var importModel: Button
+    private lateinit var diagnostics: Button
+    private lateinit var copyReport: Button
     private lateinit var ai: OfflineAiEngine
     private val worker = Executors.newSingleThreadExecutor()
     private var tts: TextToSpeech? = null
@@ -57,7 +59,7 @@ class MainActivity : FragmentActivity() {
             setPadding(35, 55, 35, 30)
         }
         layout.addView(TextView(this).apply { text = "DriveMate AI"; textSize = 30f })
-        layout.addView(TextView(this).apply { text = "Offline AI · v0.2 (experimental)"; textSize = 15f })
+        layout.addView(TextView(this).apply { text = "Offline AI · v0.3.1 dev (model setup required)"; textSize = 15f })
         input = EditText(this).apply { hint = "Ask anything in Hinglish or English"; minLines = 2 }
         layout.addView(input)
         importModel = Button(this).apply {
@@ -65,8 +67,30 @@ class MainActivity : FragmentActivity() {
             setOnClickListener { if (unlocked) modelPicker.launch(arrayOf("*/*")) }
         }
         layout.addView(importModel)
+        diagnostics = Button(this).apply {
+            text = "Check AI library"
+            setOnClickListener {
+                if (!unlocked) return@setOnClickListener
+                output.text = "Checking installed native AI library..."
+                worker.execute {
+                    val report = ai.verifyNativeLibrary()
+                    runOnUiThread { output.text = report }
+                }
+            }
+        }
+        layout.addView(diagnostics)
+        copyReport = Button(this).apply {
+            text = "Copy AI diagnostics"
+            setOnClickListener {
+                if (!unlocked) return@setOnClickListener
+                val clipboard = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                clipboard.setPrimaryClip(android.content.ClipData.newPlainText("DriveMate AI diagnostics", output.text))
+                Toast.makeText(this@MainActivity, "Diagnostics copied", Toast.LENGTH_SHORT).show()
+            }
+        }
+        layout.addView(copyReport)
         speak = Button(this).apply {
-            text = "🎙 Speak"
+            text = "🎙 Speak with AI Agent"
             setOnClickListener {
                 if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) listen()
                 else micPermission.launch(Manifest.permission.RECORD_AUDIO)
@@ -76,12 +100,18 @@ class MainActivity : FragmentActivity() {
         ask = Button(this).apply { text = "Ask offline AI"; setOnClickListener { process() } }
         layout.addView(ask)
         maps = Button(this).apply {
-            text = "Open Google Maps"
+            text = "Return to Google Maps (keep route)"
             setOnClickListener {
                 if (!unlocked) return@setOnClickListener
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=" + Uri.encode(input.text.toString().ifBlank { "restaurants" })))
-                intent.setPackage("com.google.android.apps.maps")
-                try { startActivity(intent) } catch (_: Exception) { output.text = "Google Maps not available." }
+                // Launch Maps without sending a destination or replacing an active route.
+                val intent = packageManager.getLaunchIntentForPackage("com.google.android.apps.maps")
+                if (intent == null) {
+                    output.text = "Google Maps not installed."
+                } else {
+                    try { startActivity(intent) } catch (_: Exception) {
+                        output.text = "Unable to open Google Maps."
+                    }
+                }
             }
         }
         layout.addView(maps)
@@ -97,6 +127,8 @@ class MainActivity : FragmentActivity() {
 
     private fun updateButtons() {
         importModel.isEnabled = unlocked
+        diagnostics.isEnabled = unlocked
+        copyReport.isEnabled = unlocked
         speak.isEnabled = unlocked
         maps.isEnabled = unlocked
         ask.isEnabled = unlocked && ready
@@ -115,7 +147,7 @@ class MainActivity : FragmentActivity() {
                 unlocked = true
                 updateButtons()
                 val saved = File(filesDir, "offline-model.litertlm")
-                if (saved.exists()) loadModel(saved) else output.text = "Unlocked. Import a compatible .litertlm model to start offline AI."
+                if (saved.exists()) loadModel(saved) else output.text = "Unlocked. No AI model installed. Download a compatible .litertlm model, then tap Import. For library errors, tap Check AI library and Copy AI diagnostics."
             }
         }).authenticate(
             BiometricPrompt.PromptInfo.Builder()
@@ -168,13 +200,18 @@ class MainActivity : FragmentActivity() {
             runOnUiThread {
                 ready = false
                 updateButtons()
-                output.text = "Model load failed: ${t.message}. Check LiteRT-LM model compatibility."
+                android.util.Log.e("DriveMateAI", "AI model failed to load", t)
+                output.text = "AI model failed (${t.javaClass.simpleName}): ${t.message ?: "Unknown error"}. Tap Check AI library, then Copy AI diagnostics to share the exact cause."
             }
         }
     }
 
     private fun listen() {
         if (!unlocked) return
+        if (!ready) {
+            output.text = "AI agent not ready. A compatible .litertlm model must be imported and successfully loaded before voice chat. Tap Check AI library if you see a loading error."
+            return
+        }
         try {
             voice.launch(Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
